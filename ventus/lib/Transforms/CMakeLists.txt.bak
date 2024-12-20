@@ -1,0 +1,10 @@
+add_mlir_library(
+  ToyTransforms
+  ConvertGPUToVentus.cpp
+  DEPENDS
+    MLIRToyTransformsIncGen
+  LINK_LIBS 
+    MLIRGPUDialect
+    MLIRLLVMDialect
+    MLIRLLVMCommonConversion
+)

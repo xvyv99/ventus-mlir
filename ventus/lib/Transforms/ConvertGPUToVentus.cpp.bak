@@ -1,0 +1,118 @@
+#include "mlir/IR/BuiltinOps.h"
+#include "mlir/Support/LLVM.h"
+#include "mlir/Conversion/LLVMCommon/Pattern.h"
+#include "mlir/Dialect/GPU/IR/GPUDialect.h"
+#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "llvm/Support/raw_ostream.h"
+
+#define GEN_PASS_DEF_CONVERTGPUTOVENTUS
+#include "toy/ToyPasses.h"
+
+struct GPUModuleOpConversion
+    : public mlir::ConvertOpToLLVMPattern<mlir::gpu::GPUModuleOp> {
+  using ConvertOpToLLVMPattern::ConvertOpToLLVMPattern;
+
+  mlir::LogicalResult matchAndRewrite(
+      mlir::gpu::GPUModuleOp op, 
+      OpAdaptor adaptor,
+      mlir::ConversionPatternRewriter &rewriter
+    ) const override {
+
+  std::string ModuleName = ("ventus_" + op.getName()).str();
+  auto Module = rewriter.create<mlir::ModuleOp>(op.getLoc());
+
+  // Move the region from the module op into the SPIR-V module.
+  mlir::Region &ModuleRegion = Module.getRegion();
+  rewriter.inlineRegionBefore(
+    op.getBodyRegion(), 
+    ModuleRegion,
+    ModuleRegion.begin()
+  );
+  // The spirv.module build method adds a block. Remove that.
+  // rewriter.eraseBlock(&ModuleRegion.back());
+
+  // Some of the patterns call `lookupTargetEnv` during conversion and they
+  // will fail if called after GPUModuleConversion and we don't preserve
+  // `TargetEnv` attribute.
+  // Copy TargetEnvAttr only if it is attached directly to the GPUModuleOp.
+
+    rewriter.eraseOp(op);
+
+    return mlir::success();
+  }
+};
+
+struct BarrierOpConversion
+    : public mlir::ConvertOpToLLVMPattern<mlir::gpu::BarrierOp> {
+  using ConvertOpToLLVMPattern::ConvertOpToLLVMPattern;
+
+  mlir::LogicalResult matchAndRewrite(
+        mlir::gpu::BarrierOp op, 
+        OpAdaptor adaptor,
+        mlir::ConversionPatternRewriter &rewriter
+    ) const override {
+
+    mlir::ModuleOp moduleOp = op->getParentOfType<mlir::ModuleOp>();
+    mlir::OpBuilder::InsertionGuard guard(rewriter);
+    rewriter.setInsertionPointToStart(moduleOp.getBody());
+
+    auto fnType = mlir::LLVM::LLVMFunctionType::get(
+      mlir::LLVM::LLVMVoidType::get(op.getContext()), {
+        mlir::IntegerType::get(op.getContext(), 32)
+      }, false
+    );
+
+    auto result = rewriter.create<mlir::LLVM::CallOp>(
+      op->getLoc(),
+      mlir::TypeRange(),  // void 返回
+      "llvm.riscv.ventus.barrier",
+      mlir::ValueRange{
+    rewriter.create<mlir::LLVM::ConstantOp>(
+          op->getLoc(), 
+          mlir::IntegerType::get(op->getContext(), 32), 
+          rewriter.getI32IntegerAttr(1)
+        )
+      } 
+    );
+
+    rewriter.create<mlir::LLVM::LLVMFuncOp>(
+      moduleOp.getLoc(),
+      "llvm.riscv.ventus.barrier", 
+      fnType,
+      mlir::LLVM::Linkage::External
+    );
+
+    rewriter.replaceOp(op, result);
+    return mlir::success();
+  }
+};
+
+struct ConvertGPUToVentusPass : toy::impl::ConvertGPUToVentusBase<ConvertGPUToVentusPass> {
+  using toy::impl::ConvertGPUToVentusBase<ConvertGPUToVentusPass>::ConvertGPUToVentusBase;
+  
+  void getDependentDialects(mlir::DialectRegistry &registry) const final {
+    registry.insert<mlir::gpu::GPUDialect>();
+    registry.insert<mlir::LLVM::LLVMDialect>();
+  }
+  
+  void runOnOperation() final { 
+    // mlir::MLIRContext *context = &getContext();
+    // mlir::ModuleOp mod = mlir::dyn_cast<mlir::ModuleOp>(getOperation());
+      
+    mlir::ConversionTarget target(getContext());
+    // target.addLegalDialect<mlir::gpu::GPUDialect>();
+    target.addLegalDialect<mlir::LLVM::LLVMDialect>();
+    // target.addLegalDialect<LLVM::LLVMDialect>();
+    // LLVMTypeConverter converter(&getContext());
+    mlir::RewritePatternSet patterns(&getContext());
+    patterns.add<BarrierOpConversion, GPUModuleOpConversion>(&getContext());
+    // arith::populateArithToLLVMConversionPatterns(converter, patterns);
+    if(failed(applyPartialConversion(getOperation(), target, std::move(patterns))))
+      signalPassFailure();
+  }
+};
+
+std::unique_ptr<mlir::Pass> toy::createConvertGPUToVentusPass(toy::ConvertGPUToVentusOptions options) {
+  return std::make_unique<ConvertGPUToVentusPass>(options);
+}

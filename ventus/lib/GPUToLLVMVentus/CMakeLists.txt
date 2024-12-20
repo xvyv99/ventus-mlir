@@ -1,13 +1,12 @@
-add_mlir_library(
-  ToyTransforms
-  GPUToLLVMSPV.cpp
+add_mlir_library( GPUToLLVMVentus
+  GPUToLLVMVentus.cpp
   DEPENDS
-    MLIRToyTransformsIncGen
+    MLIRVentusIncGen
   LINK_LIBS 
     MLIRGPUDialect
     MLIRLLVMDialect
     MLIRFuncDialect
     MLIRSPIRVDialect
     MLIRLLVMCommonConversion
-    MLIRGPUToGPURuntimeTransforms_ventus
+    MLIRGPUToGPURuntimeTransforms_Ventus
 )

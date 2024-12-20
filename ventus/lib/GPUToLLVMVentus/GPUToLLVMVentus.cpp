@@ -31,7 +31,7 @@
 using namespace mlir;
 
 #define GEN_PASS_DEF_CONVERTGPUTOLLVMVENTUS
-#include "toy/ToyPasses.h"
+#include "GPUToLLVMVentus/GPUToLLVMVentusPass.h"
 
 //===----------------------------------------------------------------------===//
 // Helper Functions
@@ -285,7 +285,7 @@ struct GPUShuffleConversion final : ConvertOpToLLVMPattern<gpu::ShuffleOp> {
 //===----------------------------------------------------------------------===//
 
 struct GPUToLLVMSPVConversionPass final
-    : toy::impl::ConvertGPUToLLVMVentusBase<GPUToLLVMSPVConversionPass> {
+    : ventus::impl::ConvertGPUToLLVMVentusBase<GPUToLLVMSPVConversionPass> {
   using Base::Base;
 
   void runOnOperation() final {

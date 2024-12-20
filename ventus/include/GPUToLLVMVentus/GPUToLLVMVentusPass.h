@@ -1,4 +1,5 @@
-#pragma once
+#ifndef VENTUS_PASSES_H
+#define VENTUS_PASSES_H
 
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassRegistry.h"
@@ -13,17 +14,21 @@ class RewritePatternSet;
 class Pass;
 class TypeConverter;
 
-void populateGpuToLLVMSPVConversionPatterns(LLVMTypeConverter &converter,
-                                            RewritePatternSet &patterns);
+void populateGpuToLLVMSPVConversionPatterns(
+    LLVMTypeConverter &converter,
+    RewritePatternSet &patterns
+);
 
 } // namespace mlir
 
-namespace toy {
+namespace ventus {
 
 #define GEN_PASS_DECL
-#include "toy/ToyPasses.h.inc"
+#include "GPUToLLVMVentus/GPUToLLVMVentusPass.h.inc"
 
 #define GEN_PASS_REGISTRATION
-#include "toy/ToyPasses.h.inc"
+#include "GPUToLLVMVentus/GPUToLLVMVentusPass.h.inc"
 
 }
+
+#endif // VENTUS_PASSES_H

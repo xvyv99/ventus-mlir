@@ -1,9 +1,9 @@
-add_mlir_conversion_library(MLIRGPUToGPURuntimeTransforms_ventus
+add_mlir_conversion_library(MLIRGPUToGPURuntimeTransforms_Ventus
   GPUToLLVMConversion.cpp
   GPUOpsLowering.cpp
 
   DEPENDS
-  MLIRToyTransformsIncGen
+  MLIRVentusIncGen
   intrinsics_gen
 
   LINK_COMPONENTS

@@ -1,5 +1,5 @@
-add_mlir_tool(toy-opt toy-opt.cpp)
-target_link_libraries(toy-opt
+add_mlir_tool(ventus-opt ventus-opt.cpp)
+target_link_libraries(ventus-opt
   PRIVATE
   MLIRIR MLIRParser MLIRSupport
   MLIROptLib        # 对应 #include "mlir/Tools/mlir-opt/MlirOptMain.h"
@@ -10,5 +10,5 @@ target_link_libraries(toy-opt
   MLIRLLVMDialect
   
   MLIRTransforms    # 对应 #include "mlir/Transforms/Passes.h"
-  ToyTransforms
+  GPUToLLVMVentus
 )

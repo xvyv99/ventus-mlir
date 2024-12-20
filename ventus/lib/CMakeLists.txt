@@ -1,2 +1,2 @@
-add_subdirectory(Transforms)
+add_subdirectory(GPUToLLVMVentus)
 add_subdirectory(GPUCommon)

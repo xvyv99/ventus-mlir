@@ -1,5 +1,4 @@
 add_mlir_conversion_library(MLIRGPUToGPURuntimeTransforms_ventus
-  AttrToSPIRVConverter.cpp
   GPUToLLVMConversion.cpp
   GPUOpsLowering.cpp
 
@@ -27,3 +26,4 @@ add_mlir_conversion_library(MLIRGPUToGPURuntimeTransforms_ventus
   MLIRSupport
   MLIRVectorToLLVM
 )
+

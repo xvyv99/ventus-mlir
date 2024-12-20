@@ -22,7 +22,6 @@
 #include "mlir/Conversion/ConvertToLLVM/ToLLVMPass.h"
 #include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVM.h"
 #include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVMPass.h"
-#include "mlir/Conversion/GPUCommon/GPUToLLVM.h"
 #include "mlir/Conversion/LLVMCommon/ConversionTarget.h"
 #include "mlir/Conversion/LLVMCommon/Pattern.h"
 #include "mlir/Conversion/MemRefToLLVM/MemRefToLLVM.h"
@@ -32,7 +31,6 @@
 #include "mlir/Dialect/GPU/Transforms/Passes.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
-#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/Attributes.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
@@ -58,7 +56,6 @@ public:
   using Base::Base;
   void getDependentDialects(DialectRegistry &registry) const final {
     Base::getDependentDialects(registry);
-    registry.insert<func::FuncDialect>();
     registerConvertToLLVMDependentDialectLoading(registry);
   }
   // Run the dialect converter on the module.
@@ -542,7 +539,7 @@ void GpuToLLVMConversionPass::runOnOperation() {
 
   // Preserve GPU modules and binaries. Modules are preserved as they can be
   // converted later by `gpu-module-to-binary`.
-  target.addLegalOp<gpu::GPUModuleOp, gpu::BinaryOp, func::ReturnOp, func::FuncOp>();
+  target.addLegalOp<gpu::GPUModuleOp, gpu::BinaryOp>();
   // Accept as legal LaunchFuncOps if the operands have been lowered.
   target.addDynamicallyLegalOp<gpu::LaunchFuncOp>(
       [&](gpu::LaunchFuncOp op) -> bool { return converter.isLegal(op); });
@@ -1764,35 +1761,4 @@ void mlir::populateGpuToLLVMConversionPatterns(LLVMTypeConverter &converter,
                ConvertSpMatGetSizeOpToGpuRuntimeCallPattern,
                ConvertSetCsrPointersOpToGpuRuntimeCallPattern>(converter);
   patterns.add<LegalizeLaunchFuncOpPattern>(converter, kernelBarePtrCallConv);
-}
-
-//===----------------------------------------------------------------------===//
-// GPUModuleOp convert to LLVM op interface
-//===----------------------------------------------------------------------===//
-
-namespace {
-struct GPUModuleOpConvertToLLVMInterface
-    : public ConvertToLLVMOpInterface::ExternalModel<
-          GPUModuleOpConvertToLLVMInterface, gpu::GPUModuleOp> {
-  /// Get the conversion patterns from the target attribute.
-  void getConvertToLLVMConversionAttrs(
-      Operation *op, SmallVectorImpl<ConvertToLLVMAttrInterface> &attrs) const;
-};
-} // namespace
-
-void GPUModuleOpConvertToLLVMInterface::getConvertToLLVMConversionAttrs(
-    Operation *op, SmallVectorImpl<ConvertToLLVMAttrInterface> &attrs) const {
-  auto module = cast<gpu::GPUModuleOp>(op);
-  ArrayAttr targetsAttr = module.getTargetsAttr();
-  // Fail if there are no target attributes or there is more than one target.
-  if (!targetsAttr || targetsAttr.size() != 1)
-    return;
-  if (auto patternAttr = dyn_cast<ConvertToLLVMAttrInterface>(targetsAttr[0]))
-    attrs.push_back(patternAttr);
-}
-
-void mlir::gpu::registerConvertGpuToLLVMInterface(DialectRegistry &registry) {
-  registry.addExtension(+[](MLIRContext *ctx, gpu::GPUDialect *dialect) {
-    gpu::GPUModuleOp::attachInterface<GPUModuleOpConvertToLLVMInterface>(*ctx);
-  });
 }

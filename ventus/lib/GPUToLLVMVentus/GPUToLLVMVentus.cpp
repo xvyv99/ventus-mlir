@@ -49,7 +49,7 @@ static LLVM::LLVMFuncOp lookupOrCreateSPIRVFn(Operation *symbolTable,
     func = b.create<LLVM::LLVMFuncOp>(
         symbolTable->getLoc(), name,
         LLVM::LLVMFunctionType::get(resultType, paramTypes));
-    func.setCConv(LLVM::cconv::CConv::SPIR_FUNC);
+    // func.setCConv(LLVM::cconv::CConv::SPIR_FUNC);
     func.setConvergent(isConvergent);
   }
   return func;
@@ -60,7 +60,7 @@ static LLVM::CallOp createSPIRVBuiltinCall(Location loc,
                                            LLVM::LLVMFuncOp func,
                                            ValueRange args) {
   auto call = rewriter.create<LLVM::CallOp>(loc, func, args);
-  call.setCConv(func.getCConv());
+  // call.setCConv(func.getCConv());
   return call;
 }
 
@@ -82,7 +82,7 @@ struct GPUBarrierConversion final : ConvertOpToLLVMPattern<gpu::BarrierOp> {
   LogicalResult
   matchAndRewrite(gpu::BarrierOp op, OpAdaptor adaptor,
                   ConversionPatternRewriter &rewriter) const final {
-    constexpr StringLiteral funcName = "_Z7barrierj";
+    constexpr StringLiteral funcName = "llvm.riscv.ventus.barrier";
 
     Operation *moduleOp = op->getParentWithTrait<OpTrait::SymbolTable>();
     assert(moduleOp && "Expecting module");

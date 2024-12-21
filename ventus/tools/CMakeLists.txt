@@ -8,6 +8,7 @@ target_link_libraries(ventus-opt
   MLIRSCFDialect
   MLIRMemRefDialect
   MLIRLLVMDialect
+  MLIRVectorDialect
   
   MLIRTransforms    # 对应 #include "mlir/Transforms/Passes.h"
   GPUToLLVMVentus

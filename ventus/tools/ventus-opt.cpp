@@ -5,7 +5,10 @@
 #include "mlir/Dialect/GPU/IR/GPUDialect.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
+#include "mlir/Dialect/Vector/IR/VectorOps.h"
 #include "mlir/Transforms/Passes.h"
+#include "mlir/Conversion/Passes.h"
+#include "mlir/Conversion/VectorToGPU/VectorToGPU.h"
 
 #include "GPUToLLVMVentus/GPUToLLVMVentusPass.h"
 
@@ -16,7 +19,8 @@ int main(int argc, char ** argv) {
     mlir::gpu::GPUDialect, 
     mlir::func::FuncDialect,
     mlir::memref::MemRefDialect,
-    mlir::LLVM::LLVMDialect
+    mlir::LLVM::LLVMDialect,
+    mlir::vector::VectorDialect
   >();
   mlir::registerCSEPass();
   mlir::registerCanonicalizerPass();

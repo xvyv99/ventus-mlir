@@ -1,24 +1,30 @@
-mkdir -p temp
+MLIR_OPT=$llvm_build/bin/mlir-opt
 
-../build/ventus-opt --convert-gpu-to-llvm-ventus ./vecadd_gpu.mlir > ./temp/vecadd_i.mlir
+file_name=$1
 
-sed -i 's/gpu.func/func.func/g' ./temp/vecadd_i.mlir
-sed -i 's/gpu.return/func.return/g' ./temp/vecadd_i.mlir
-sed -i 's/) kernel {/) {/g' ./temp/vecadd_i.mlir
+mkdir -p temp/${file_name}
 
-mlir-opt-19 ./temp/vecadd_i.mlir \
-    --finalize-memref-to-llvm \
+${MLIR_OPT} ./${file_name}.mlir \
+    --convert-vector-to-gpu="use-nvgpu=false" \
+    --canonicalize \
+    > ./temp/${file_name}/lower0.mlir
+
+../build/ventus-opt ./temp/${file_name}/lower0.mlir \
+    --convert-gpu-to-llvm-ventus \
+    --allow-unregistered-dialect \
+    > ./temp/${file_name}/lower1.mlir
+
+sed -i 's/gpu.func/func.func/g' ./temp/${file_name}/lower1.mlir
+sed -i 's/gpu.return/func.return/g' ./temp/${file_name}/lower1.mlir
+sed -i 's/) kernel {/) {/g' ./temp/${file_name}/lower1.mlir
+sed -i '/gpu.module/d;/^}/d' ./temp/${file_name}/lower1.mlir
+sed -i 's/gpu\.container_module//g' ./temp/${file_name}/lower1.mlir
+
+${MLIR_OPT} ./temp/${file_name}/lower1.mlir \
+    --convert-vector-to-llvm \
+    --convert-func-to-llvm="use-bare-ptr-memref-call-conv=true" \
     --convert-arith-to-llvm \
+    --finalize-memref-to-llvm="index-bitwidth=0" \
     --cse \
     --canonicalize \
-    --buffer-deallocation \
-    --buffer-hoisting \
-    > ./temp/vecadd_i1.mlir
-
-mlir-opt-19 ./temp/vecadd_i1.mlir \
-    --convert-func-to-llvm \
-    --cse \
-    --canonicalize \
-    --buffer-deallocation \
-    --buffer-hoisting \
-    > ./temp/vecadd_llvm.mlir
+    > ./temp/${file_name}/llvm.mlir

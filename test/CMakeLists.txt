@@ -1,5 +1,7 @@
 cmake_policy(SET CMP0135 NEW)
 
+include_directories(include)
+
 INCLUDE(FetchContent)
 FetchContent_Declare(
   googletest

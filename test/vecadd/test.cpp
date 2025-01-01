@@ -1,10 +1,17 @@
 #include "ventus.h"
+#include "utils.h"
+
+#include <cstddef>
+#include <cstring>
 #include <iostream>
+#include <iterator>
 using namespace std;
 
 #ifndef KERNEL_ADDRESS
 #define KERNEL_ADDRESS  0x800000b8  // need modify 
 #endif
+
+#define ELF_NAME "vecadd.riscv"
 
 struct meta_data{  // 这个metadata是供驱动使用的，而不是给硬件的
     uint64_t kernel_id;
@@ -26,7 +33,12 @@ struct meta_data{  // 这个metadata是供驱动使用的，而不是给硬件�
       }
 };
 
-int main(){
+void vecadd_cpu(float* vec_1, float* vec_2, size_t size) {
+    for(size_t i=0 ; i<size ; i++)
+        vec_1[i] += vec_2[i];
+}
+
+void vecadd_gpu(float* vec_1, float* vec_2, size_t size) {
     uint64_t num_warp=4;
     uint64_t num_thread=8;
     uint64_t num_workgroups[3]={1,1,1};
@@ -38,13 +50,13 @@ int main(){
     uint64_t start_pc=0x80000000;
     uint64_t knlbase=0x90000000;
     meta_data meta(0,num_workgroups,num_thread,num_warp,knlbase,ldssize,pdssize,32,32,pdsbase);
-    char filename[]="vecadd.riscv";//set elf filename
+    char filename[]=ELF_NAME;//set elf filename
 
     uint64_t size_0=0x10000000;
-    float data_0[]={1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};//arg_1
+    // float data_0[]={1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};//arg_1
     uint64_t vaddr_0;
     uint64_t size_1=0x10000000;
-    float data_1[]={1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};//arg_2
+    // float data_1[]={1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};//arg_2
     uint64_t vaddr_1,vaddr_2,vaddr_3,vaddr_4;
 
     uint64_t vaddr_print;
@@ -55,15 +67,15 @@ int main(){
 
     vt_buf_alloc(p,size_0,&vaddr_0,0,0,0);//allocate for program
     vt_buf_alloc(p,pdssize*num_thread*num_warp*num_workgroup,&pdsbase,0,0,0);//allocate for privatemem
-    vt_buf_alloc(p,16*4,&vaddr_1,0,0,0);//allocate arg1 buffer
-    vt_buf_alloc(p,16*4,&vaddr_2,0,0,0);//allocate arg2 buffer
+    vt_buf_alloc(p,size*sizeof(float),&vaddr_1,0,0,0);//allocate arg1 buffer
+    vt_buf_alloc(p,size*sizeof(float),&vaddr_2,0,0,0);//allocate arg2 buffer
     vt_buf_alloc(p,16*4,&vaddr_3,0,0,0);//allocate metadata buffer
     vt_buf_alloc(p,2*4,&vaddr_4,0,0,0);//allocate buffer base
 
     vt_buf_alloc(p,size_print,&vaddr_print,0,0,0);//allocate buffer base
 
-    vt_copy_to_dev(p,vaddr_1,data_0,16*4,0,0);
-    vt_copy_to_dev(p,vaddr_2,data_1,16*4,0,0);
+    vt_copy_to_dev(p,vaddr_1,vec_1,size*sizeof(float),0,0);
+    vt_copy_to_dev(p,vaddr_2,vec_2,size*sizeof(float),0,0);
     meta.metaDataBaseAddr=vaddr_3;
     meta.pdsBaseAddr=pdsbase;
     uint32_t data_2[14];//metadata
@@ -82,16 +94,39 @@ int main(){
     vt_upload_kernel_file(p,filename,0);
     vt_start(p,&meta,0);
     cout << "finish running" << endl;
-    vt_copy_from_dev(p,vaddr_2,data_1,16*4,0,0);
-    vt_copy_from_dev(p,vaddr_1,data_0,16*4,0,0);
 
-    for(int i=0;i<16;i++)
-        cout << data_0[i] << " " << data_1[i] << endl;
-    uint32_t *print_data=new uint32_t[64];
-    vt_copy_from_dev(p,vaddr_print,print_data,64*4,0,0);
-    for(int i=0;i<64;i++)
-        cout <<  print_data[i] << endl;
+    vt_copy_from_dev(p,vaddr_1,vec_1,size*sizeof(float),0,0);
+    vt_copy_from_dev(p,vaddr_2,vec_2,size*sizeof(float),0,0);
+
     vt_buf_free(p,0,nullptr,0,0);
-    delete[] print_data;
+}
+
+int main(){
+    srand(time(0));
+
+    const size_t vec_size = 8;
+
+    float* vec_a = vec_generate_random(vec_size);
+    float* vec_b = vec_generate_random(vec_size);
+
+    float* vec_a_cpu = new float[vec_size]; 
+    float* vec_a_gpu = new float[vec_size];
+
+    memcpy(vec_a_cpu, vec_a, vec_size);
+    memcpy(vec_a_gpu, vec_a, vec_size);
+
+    vec_print(vec_a, vec_size);
+    vec_print(vec_b, vec_size);
+
+    vecadd_cpu(vec_a_cpu, vec_b, vec_size);
+    vecadd_gpu(vec_a_gpu, vec_b, vec_size);
+
+    std::cout<<"Difference sum: "<<vec_diff_sum(vec_a_cpu, vec_a_gpu, vec_size)<<std::endl;
+
+    delete[] vec_a;
+    delete[] vec_b;
+    delete[] vec_a_cpu;
+    delete[] vec_a_gpu;
+
     return 0;
 }

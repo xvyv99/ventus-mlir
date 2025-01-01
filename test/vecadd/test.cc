@@ -5,6 +5,8 @@
 #include <cstring>
 #include <iostream>
 #include <iterator>
+#include <gtest/gtest.h>
+
 using namespace std;
 
 #ifndef KERNEL_ADDRESS
@@ -101,10 +103,11 @@ void vecadd_gpu(float* vec_1, float* vec_2, size_t size) {
     vt_buf_free(p,0,nullptr,0,0);
 }
 
-int main(){
+TEST(vecadd, 0) {
     srand(time(0));
 
     const size_t vec_size = 8;
+    const float tol = 1E-4;
 
     float* vec_a = vec_generate_random(vec_size);
     float* vec_b = vec_generate_random(vec_size);
@@ -121,12 +124,12 @@ int main(){
     vecadd_cpu(vec_a_cpu, vec_b, vec_size);
     vecadd_gpu(vec_a_gpu, vec_b, vec_size);
 
-    std::cout<<"Difference sum: "<<vec_diff_sum(vec_a_cpu, vec_a_gpu, vec_size)<<std::endl;
+    std::cout<<"Difference sum between two vector: "<<vec_diff_sum(vec_a_cpu, vec_a_gpu, vec_size)<<std::endl;
+
+    EXPECT_TRUE(vec_diff_sum(vec_a_cpu, vec_a_gpu, vec_size)<=tol);
 
     delete[] vec_a;
     delete[] vec_b;
     delete[] vec_a_cpu;
     delete[] vec_a_gpu;
-
-    return 0;
 }

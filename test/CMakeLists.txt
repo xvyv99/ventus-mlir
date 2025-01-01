@@ -18,6 +18,4 @@ FetchContent_MakeAvailable(googletest)
 
 INCLUDE(GoogleTest)
 
-# add_subdirectory(vecadd)
-
 add_spike_test(vecadd)

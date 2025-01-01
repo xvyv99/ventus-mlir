@@ -1,12 +1,4 @@
 function(add_spike_test target)
-
-  ADD_EXECUTABLE( test_${target}
-      ${CMAKE_CURRENT_SOURCE_DIR}/${target}/${target}.cc
-  )
-  TARGET_LINK_LIBRARIES( test_${target} PRIVATE GTest::gtest_main )
-
-  GTEST_DISCOVER_TESTS( test_${target} )
-
   # Define KERNEL_ADDRESS if not already defined (default: 0x800000b8)
   if(NOT DEFINED KERNEL_ADDRESS)
     message(STATUS "KERNEL_ADDRESS not specified, using default address 0x800000b8")
@@ -40,18 +32,22 @@ function(add_spike_test target)
   set_target_properties(${PROJECT} PROPERTIES OUTPUT_NAME "${PROJECT}")
   set_target_properties(${PROJECT} PROPERTIES CLEAN_DIRECT_OUTPUT 1)
 
-  add_executable(spike_test 
-      ${CMAKE_CURRENT_SOURCE_DIR}/${target}/test.cpp
+  add_executable( test_${target} 
+      ${CMAKE_CURRENT_SOURCE_DIR}/${target}/test.cc
       ${CMAKE_CURRENT_SOURCE_DIR}/utils.cc
   )
 
-  add_dependencies(spike_test ${PROJECT})
-  target_link_libraries(spike_test PUBLIC ${PROJECT})
+  add_dependencies( test_${target} ${PROJECT} )
+  target_link_libraries( test_${target}  
+    PUBLIC ${PROJECT}
+    PRIVATE GTest::gtest_main 
+  )
+
+  GTEST_DISCOVER_TESTS( test_${target} )
 
   configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/${target}/${target}.riscv
     ${CMAKE_BINARY_DIR}/${target}.riscv
     COPYONLY
   )
-
 endfunction()

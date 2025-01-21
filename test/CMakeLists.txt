@@ -4,6 +4,8 @@ set(PROJECT spike_driver)
 set(SPIKE_SRC_DIR /home/xvyv99/My_Data/Project/gpgpu/ventus-gpgpu-isa-simulator)
 set(SPIKE_TARGET_DIR /home/xvyv99/My_Data/Project/gpgpu/llvm-project/install)
 
+set(VENTUS_INSTALL_PREFIX /home/xvyv99/My_Data/Project/gpgpu/llvm-project/install)
+
 include_directories(include)
 
 INCLUDE(FetchContent)

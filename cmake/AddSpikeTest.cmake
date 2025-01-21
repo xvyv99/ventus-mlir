@@ -45,9 +45,22 @@ function(add_spike_test target)
 
   GTEST_DISCOVER_TESTS( test_${target} )
 
+  add_custom_target(
+    ${target}.riscv
+    COMMAND make -f ${CMAKE_CURRENT_SOURCE_DIR}/${target}/Makefile 
+      VENTUS_INSTALL_PREFIX=${VENTUS_INSTALL_PREFIX}
+      VENTUS_OPT=${CMAKE_BINARY_DIR}/ventus-opt
+      SOURCE_PATH=${CMAKE_CURRENT_SOURCE_DIR}/${target}
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    DEPENDS ventus-opt
+  )
+
+  add_dependencies(test_${target} ${target}.riscv)
+
   configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/${target}/${target}.riscv
-    ${CMAKE_BINARY_DIR}/${target}.riscv
+    ${CMAKE_CURRENT_SOURCE_DIR}/${target}/${target}_cl.riscv
+    ${CMAKE_BINARY_DIR}/${target}_cl.riscv
     COPYONLY
   )
+  
 endfunction()

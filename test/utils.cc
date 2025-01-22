@@ -1,4 +1,5 @@
 #include <cmath>
+#include <cstddef>
 #include <iostream>
 #include <ctime>
 #include "ventus.h"
@@ -22,6 +23,18 @@ void vec_print(float* vec, size_t length) {
     for(size_t i=0; i<length; i++)
         std::cout<<vec[i]<<' ';
     std::cout<<std::endl;
+}
+
+void mat_print(float* mat, size_t M, size_t N) {
+    std::cout<<"[ ";
+    for(size_t i=0; i<M; i++) {
+        for(size_t j=0; j<N; j++) {
+            std::cout<<mat[i*N+j]<<' ';
+        }
+        if (i==M-1)
+            std::cout<<']';
+        std::cout<<std::endl;
+    }
 }
 
 void launch_kernel(vt_device_h hdevice, uint32_t* arg_buffer, size_t arg_num, char* elf_name) {

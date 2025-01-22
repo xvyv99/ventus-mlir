@@ -4,14 +4,9 @@
 #include <cstddef>
 #include <cstring>
 #include <iostream>
-#include <iterator>
 #include <gtest/gtest.h>
 
 using namespace std;
-
-#ifndef KERNEL_ADDRESS
-#define KERNEL_ADDRESS  0x800000b8  // need modify 
-#endif
 
 void vecadd_cpu(float* vec_1, float* vec_2, size_t size) {
     for(size_t i=0 ; i<size ; i++)
@@ -64,6 +59,9 @@ TEST(vecadd, 0) {
     vecadd_gpu(vec_a_gpu, vec_b, vec_size);
 
     std::cout<<"Difference sum between two vector: "<<vec_diff_sum(vec_a_cpu, vec_a_gpu, vec_size)<<std::endl;
+
+    vec_print(vec_a_cpu, vec_size);
+    vec_print(vec_a_gpu, vec_size);
 
     EXPECT_TRUE(vec_diff_sum(vec_a_cpu, vec_a_gpu, vec_size)<=tol);
 

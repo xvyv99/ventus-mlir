@@ -7,6 +7,8 @@ float vec_diff_sum(float* vec_1, float* vec_2, size_t length);
 
 void vec_print(float*, size_t);
 
+void mat_print(float*, size_t, size_t);
+
 struct meta_data{  // 这个metadata是供驱动使用的，而不是给硬件的
     uint64_t kernel_id;
     uint64_t kernel_size[3];///> 每个kernel的workgroup三维数目

@@ -9,7 +9,7 @@ module attributes {gpu.container_module} {
       %sum = arith.addf %val1, %val2 : f32
       
       memref.store %sum, %arg0[%idx] : memref<32xf32>
-
+      
       gpu.return
     }
   }
